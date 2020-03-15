@@ -1,0 +1,57 @@
+******************************************
+Benchmarking a hadoop cluster
+******************************************
+
+-----*** Generate input using tergen ***-----
+$ hadoop jar $HADOOP_PREFIX/hadoop-*examples*.jar teragen 524288 input  (50 MB)
+$ hadoop fs -ls input
+$ hadoop fs -copyToLocal input ~
+$ nano ~/input/part-00000
+
+-----*** Sort the input using terasort ***-----
+$ hadoop jar $HADOOP_PREFIX/hadoop-*examples*.jar terasort input output                
+$ hadoop fs -ls output
+$ hadoop fs -copyToLocal output ~
+$ nano ~/output/part-00000
+
+-----*** Validate output ***-----
+$ hadoop jar $HADOOP_PREFIX/hadoop-*examples*.jar teravalidate output validate-output
+$ hadoop fs -ls validate-output
+$ hadoop fs -cat validate-output/part-00000 
+
+
+-----*** Run a write test ***-----
+$ hadoop jar $HADOOP_PREFIX/hadoop-*test*.jar TestDFSIO -write -nrFiles 5 -fileSize 50 
+## Results : ----- TestDFSIO ----- : write
+            			     Date & time: Fri Jan 06 11:52:47 UTC 2017
+        			     Number of files: 5
+ 				     Total MBytes processed: 250
+      				     Throughput mb/sec: 41.583499667332
+ 				     Average IO rate mb/sec: 46.65265655517578
+  				     IO rate std deviation: 19.63335430303656
+     				     Test exec time sec: 22.624
+
+-----*** Run a read test ***-----
+hadoop jar $HADOOP_PREFIX/hadoop-*test*.jar TestDFSIO -read -nrFiles 5 -fileSize 50
+## Results :  ----- TestDFSIO ----- : read
+				      Number of files: 5
+				      Total MBytes processed: 250
+				      Throughput mb/sec: 77.64914899970141
+				      Average IO rate mb/sec: 83.42228698730469
+				      IO rate std deviation: 26.990856757036237
+				      Test exec time sec: 22.56
+
+-----*** Clean read/write test data ***-----
+$ hadoop jar $HADOOP_PREFIX/hadoop-*test*.jar TestDFSIO -clean
+
+
+
+-----*** MapReduce Benchmarking ***-----
+$ hadoop jar $HADOOP_PREFIX/hadoop-*test*.jar mrbench -numRuns 20
+## Results
+DataLines	Maps	Reduces	AvgTime (milliseconds)
+1		2	1	17290
+
+
+-----*** Delete output folders ***----
+$ hadoop fs -rmr -skipTrash input

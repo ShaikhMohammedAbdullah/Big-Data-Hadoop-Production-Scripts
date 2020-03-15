@@ -1,0 +1,190 @@
+###################################
+	Hadoop Security [ Evaluate ]
+###################################
+
+
+## Try creating a directory named from ubuntu user
+
+hdfs dfs -mkdir /mangu
+hdfs dfs -mkdir /user/mangu
+
+## Goto hdfs -> configurations -> search - permissions -> Check HDFS Permissions (untick it)
+
+hdfs dfs -mkdir /user/mangu
+
+## Enable hdfs permissions
+
+## Create a unix user
+sudo  adduser jinga
+
+su jinga
+
+hdfs dfs -mkdir /user/jinga
+
+export HADOOP_USER_NAME=hdfs
+
+hdfs dfs -mkdir /user/jinga
+
+
+## Create another user
+
+sudo adduser mogambo
+
+su mogambo
+
+export HADOOP_USER_NAME=hdfs
+
+hdfs dfs -mkdir /user/mogambo
+
+nano file
+Hello This a test for security
+Mogambo khush hua
+Mogambo khush hua
+Mogambo khush hua
+
+hdfs dfs -put file /user/mogambo
+
+hdfs dfs -cat file
+
+yarn jar /usr/lib/hadoop-mapreduce/hadoop-mapreduce-examples.jar pi 10 10
+
+
+## Lets try and access other users files
+
+hadoop fsck /user/mogambo -files -blocks -locations
+
+sudo find /dfs/dn -name *blk_1073743739*
+
+sudo cat /dfs/dn/current/BP-455239180-172.31.64.234-1491322807590/current/finalized/subdir0/subdir7/blk_1073743739
+
+>> You will be able to see unencrypted data
+
+
+## Now exit to ubuntu user
+
+start another terminal -> ssh into other datanode
+
+>> On the first terminal
+
+sudo apt-get install libpcap-dev -y && sudo apt-get install wireshark -y
+
+sudo apt-get install tshark -y
+
+sudo dpkg-reconfigure wireshark-common
+
+nano outfile1.pcap
+
+chmod o=rw outfile1.pcap
+
+sudo tshark -i eth0 -a duration:20 -w outfile1.pcap|-
+
+>> On another terminal 
+
+export HADOOP_USER_NAME=hdfs
+
+nano file1.txt
+Hello This a test for security
+Mogambo khush hua
+Mogambo khush hua
+Mogambo khush hua
+Mogambo khush hua
+Mogambo khush hua
+
+hdfs dfs -put file1.txt /
+
+
+>> Goto first terminal 
+
+nano outfile1.pcap
+search for 'mogambo'
+
+
+## Lets run some jobs
+
+
+On two datanodes create user usera
+sudo adduser usera
+
+On one of the datanodes become hdfs user and create directory for usera
+sudo su - hdfs
+hdfs dfs -mkdir /user/usera
+hdfs dfs -chown usera:usera /user/usera
+
+exit from hdfs
+Login to usera
+
+>> Run a job
+
+yarn jar /usr/lib/hadoop-mapreduce/hadoop-mapreduce-examples.jar randomwriter /user/usera/manikchand
+
+>> On other datanode
+Login as usera 
+
+>> Run a job
+
+yarn jar /usr/lib/hadoop-mapreduce/hadoop-mapreduce-examples.jar pi 10 10
+
+Note : no authentication, so no way of knowing if it's the same user on both hosts. 
+The only reason this works is because the user name exists on both hosts.
+
+## Run a hive shell
+
+$ hive
+
+create table beauty (a string, b string, c string) row format delimited fields terminated by '\t';
+
+create table ugly (a string, b string, c string) row format delimited fields terminated by '\t';
+
+show tables;
+describe ugly;
+describe extended beauty;
+
+exit;
+
+>> You can find out where the files backing the stable are stored in HDFS
+
+Add data to a pair of files tab delimited dataset and datasets
+
+nano dataset
+JIO	Maro	JIO	Maro	JIO	Maro	JIO
+JIO	Maro	JIO	Maro	JIO	Maro	JIO
+JIO	Maro	JIO	Maro	JIO	Maro	JIO
+JIO	Maro	JIO	Maro	JIO	Maro	JIO
+JIO	Maro	JIO	Maro	JIO	Maro	JIO
+JIO	Maro	JIO	Maro	JIO	Maro	JIO
+JIO	Maro	JIO	Maro	JIO	Maro	JIO
+JIO	Maro	JIO	Maro	JIO	Maro	JIO
+
+nano datasets
+mogambo	khush	hua
+mogambo	khush	hua
+mogambo	khush	hua
+mogambo	khush	hua
+mogambo	khush	hua
+mogambo	khush	hua
+mogambo	khush	hua
+mogambo	khush	hua
+mogambo	khush	hua
+
+
+>> drop to hive shell again
+
+load data local inpath 'dataset' into table ugly;
+select * from ugly;
+load data local inpath 'datasets' into table beauty;
+select * from beauty;
+
+exit;
+
+
+nano script.sh
+hive -e 'drop table ugly;'
+
+$ hive
+
+hive> add file script.sh;
+hive> from beauty select transform(a) using 'script.sh' as (data);
+
+exit;
+
+
